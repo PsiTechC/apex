@@ -11,6 +11,7 @@ async function submitHandler(req) {
 
     const body = await req.json().catch(() => ({}));
     const email = String(body.email || "").trim().toLowerCase();
+    const testId = String(body.testId || "").trim(); // <- carry the batch id
     const responsesIn = Array.isArray(body.responses) ? body.responses : [];
 
     if (!email) {
@@ -40,7 +41,7 @@ async function submitHandler(req) {
     const client = await MongoClient.connect(process.env.MONGO_URI);
     const db = client.db();
 
-    // Get correct answers for these question numbers
+    // fetch correct answers for these question numbers
     const numbers = cleaned.map((r) => r.questionNumber);
     const qaDocs = await db
       .collection("cybersecurity_awareness_questions_full")
@@ -63,6 +64,7 @@ async function submitHandler(req) {
       })
     );
 
+    const now = new Date();
     const results = cleaned.map((r) => {
       const correct = correctMap.get(r.questionNumber) || null;
       const isCorrect = correct ? r.selected === correct : null;
@@ -70,23 +72,27 @@ async function submitHandler(req) {
         questionNumber: r.questionNumber,
         selected: r.selected,
         isCorrect,
-        answeredAt: new Date(),
+        answeredAt: now,
       };
     });
 
-
     const col = db.collection("questions_complete_record");
 
+    // Upsert by email + testId (if provided). If no testId, use email only.
+    const filter = { email, ...(testId ? { testId } : {}) };
+
     const updateRes = await col.updateOne(
-      { email },
+      filter,
       {
         $set: {
           email,
+          ...(testId ? { testId } : {}),
           questions: results,
-          isSubmit: true, // ✅ mark as submitted
-          submittedAt: new Date(),
+          isSubmit: true,
+          submittedAt: now,
+          updatedAt: now,
         },
-        $setOnInsert: { createdAt: new Date() },
+        $setOnInsert: { createdAt: now },
       },
       { upsert: true }
     );
@@ -97,6 +103,7 @@ async function submitHandler(req) {
       JSON.stringify({
         message: "responses saved",
         email,
+        testId: testId || null,
         count: results.length,
         isSubmit: true,
         upserted: !!updateRes.upsertedId,
