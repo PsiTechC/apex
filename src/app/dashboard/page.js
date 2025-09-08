@@ -35,7 +35,6 @@ export default function DashboardPage() {
 
   const fetchOwnerControls = async () => {
     try {
-      // ⛔ Don’t run this for non‑CISO roles or missing email
       if (role !== "ciso" || !email) return;
 
       const res = await fetch(`/api/ciso/get-owners?email=${encodeURIComponent(email)}`);
@@ -125,7 +124,7 @@ console.log();
 
     switch (selectedTab) {
       case "Dashboard":
-        return <Dashboard ownerEmails={ownerEmails} />;
+        return <Dashboard ownerEmails={ownerEmails} organizationType={organizationType}/>;
       case "Control Assignment":
         return <ControlAssignment sidebarOpen={sidebarOpen} ciso_email={email} organizationType={organizationType} ownerEmails={ownerEmails} ownerControlMap={ownerControlMap} assignedMap={assignedMap} onRefresh={fetchOwnerControls} />;
       case "Evidence Approval":

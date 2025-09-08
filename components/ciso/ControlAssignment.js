@@ -127,7 +127,7 @@ export default function ControlAssignment({
   const headers =
     sourceRows.length > 0
       ? Object.keys(sourceRows[0]).filter(
-        (key) => key !== "_id" && key !== "FINANCIAL YEAR" && key !== "CONTROL ID" && key !== "STANDARD"
+        (key) => key !== "_id" && key !== "FINANCIAL YEAR" && key !== "STANDARD"
       )
       : [];
 
