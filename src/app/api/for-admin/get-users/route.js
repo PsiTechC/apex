@@ -6,7 +6,6 @@ async function getUsers(request) {
     const client = await MongoClient.connect(process.env.MONGO_URI);
     const db = client.db("APEX");
 
-    // Only return users where role === "ciso"
     const users = await db
       .collection("users")
       .find({ role: "ciso" })

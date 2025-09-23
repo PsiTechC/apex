@@ -24,12 +24,16 @@ export default function ControlAssignment({
   const [selectedControl, setSelectedControl] = useState(null);
   const [isReassign, setIsReassign] = useState(false);
   const [mappedMembers, setMappedMembers] = useState(ownerEmails || []);
+  const [selectedStatus, setSelectedStatus] = useState("");
 
 
   const [selectedGoal, setSelectedGoal] = useState("");
   const [selectedFunction, setSelectedFunction] = useState("");
 
   // Hardcoded options
+
+
+  
   const GOAL_TYPES = ["ANTICIPATE", "EVOLVE", "RECOVER", "WITHSTAND AND CONTAIN"];
   const FUNCTION_TYPES = [
     "DETECT",
@@ -48,8 +52,19 @@ export default function ControlAssignment({
   const filteredControls = controls.filter((c) => {
     const goalMatch = selectedGoal ? c.GOAL === selectedGoal : true;
     const functionMatch = selectedFunction ? c.FUNCTION === selectedFunction : true;
-    return goalMatch && functionMatch;
+  
+    // ✅ Status filter
+    const assignedOwners = assignedMap?.[c["CONTROL ID"]] || [];
+    const statusMatch =
+      selectedStatus === "assigned"
+        ? assignedOwners.length > 0
+        : selectedStatus === "pending"
+        ? assignedOwners.length === 0
+        : true;
+  
+    return goalMatch && functionMatch && statusMatch;
   });
+
 
 
   const paginatedControls = filteredControls.slice(
@@ -193,13 +208,18 @@ export default function ControlAssignment({
             ))}
           </select>
 
-          <select className="border border-gray-300 rounded px-3 py-1 text-sm w-[160px]">
-            <option>Select Status</option>
-          </select>
-
-          <button className="bg-[#5D5FEF] hover:bg-[#4d4fec] text-white text-sm px-4 py-1.5 rounded">
-            Search
-          </button>
+          <select
+  className="border border-gray-300 rounded px-3 py-1 text-sm w-[160px]"
+  value={selectedStatus}
+  onChange={(e) => {
+    setSelectedStatus(e.target.value);
+    setCurrentPage(1); // reset page on filter change
+  }}
+>
+  <option value="">Select Status</option>
+  <option value="assigned">Assigned</option>
+  <option value="pending">Pending</option>
+</select>
           <button
             onClick={() => setShowModal(true)}
             className="bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-1.5 rounded"

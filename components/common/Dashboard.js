@@ -114,16 +114,12 @@ export default function Dashboard({ ownerEmails = [], organizationType }) {
             <span className="text-m">
               {organizationType
                 ?.split("_")
-                .map((w, i) =>
-                  i === 0
-                    ? w.charAt(0) + w.slice(1).toLowerCase()
-                    : w.toLowerCase()
-                )
+                .slice(1)
+                .map((w, i) => i === 0 ? w.charAt(0) + w.slice(1).toLowerCase() : w.toLowerCase())
                 .join(" ")}
             </span>
           }
         />
-
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -264,7 +260,7 @@ function OwnersList({ emails = [], pendingByEmail = {} }) {
   const handleLeaveOwners = () => {
     if (hoverInTid.current) clearTimeout(hoverInTid.current);
     if (hoverOutTid.current) clearTimeout(hoverOutTid.current);
-    hoverOutTid.current = setTimeout(() => setActive(null), 150); // gentle hover-out
+    hoverOutTid.current = setTimeout(() => setActive(null), 150); 
   };
 
   return (
