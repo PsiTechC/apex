@@ -5,30 +5,30 @@ async function getRiskControl(req) {
   if (req.method === "GET") {
     try {
       const { searchParams } = new URL(req.url);
-  
+
       const emails =
         [...searchParams.getAll("email")]
           .flatMap((v) => v.split(","))
           .map((v) => v.trim().toLowerCase())
           .filter(Boolean);
-  
+
       if (!emails.length) {
         return new Response(
           JSON.stringify({ message: "At least one email is required" }),
           { status: 400 }
         );
       }
-  
+
       const client = await MongoClient.connect(process.env.MONGO_URI);
       const db = client.db("APEX");
       const collection = db.collection("control_risk");
-  
+
       const query = { status: "risk", owner: { $in: emails } };
-  
+
       const risks = await collection.find(query).sort({ timestamp: -1 }).toArray();
-  
+
       await client.close();
-  
+
       // 🔹 Format response so that:
       // - Control risks return controlId
       // - Other risks return date
@@ -59,7 +59,7 @@ async function getRiskControl(req) {
           ...r,
         };
       });
-  
+
       return new Response(
         JSON.stringify({
           message: "Risk controls fetched successfully",
@@ -75,8 +75,8 @@ async function getRiskControl(req) {
       });
     }
   }
-  
-  
+
+
 
   if (req.method === "POST") {
     try {
@@ -93,6 +93,7 @@ async function getRiskControl(req) {
       const client = await MongoClient.connect(process.env.MONGO_URI);
       const db = client.db("APEX");
       const collection = db.collection("control_risk");
+      const auditCollection = db.collection("audit_trial");
 
       let doc;
       if (riskType === "control") {
@@ -104,14 +105,46 @@ async function getRiskControl(req) {
             { status: 400 }
           );
         }
+
         doc = {
           riskType: "control",
           controlId,
           description,
           status: "risk",
-          owner: ciso_email.toLowerCase(), // ✅ link to ciso_email
+          owner: ciso_email.toLowerCase(),
           timestamp: new Date(),
         };
+
+        // 🔹 Sync with audit_trial
+        const auditDoc = await auditCollection.findOne({ controlId });
+        if (auditDoc) {
+          // update existing evidence with risk fields
+          await auditCollection.updateOne(
+            { controlId, "evidences.0": { $exists: true } },
+            {
+              $set: {
+                "evidences.0.riskStatus": "risk",
+                "evidences.0.riskAt": new Date(),
+                "evidences.0.riskComment": description,
+              },
+            }
+          );
+        } else {
+          // create minimal audit doc
+          await auditCollection.insertOne({
+            ciso: ciso_email.toLowerCase(),
+            controlId,
+            evidences: [
+              {
+                evidenceName: "Unknown Evidence", // or leave blank if not known here
+                riskStatus: "risk",
+                riskAt: new Date(),
+                riskComment: description,
+              },
+            ],
+            createdAt: new Date(),
+          });
+        }
       } else if (riskType === "other") {
         if (!description || !type || !date) {
           return new Response(
@@ -127,7 +160,7 @@ async function getRiskControl(req) {
           type,
           date,
           status: "risk",
-          owner: ciso_email.toLowerCase(), // ✅ link to ciso_email
+          owner: ciso_email.toLowerCase(),
           timestamp: new Date(),
         };
       } else {
@@ -156,6 +189,7 @@ async function getRiskControl(req) {
       });
     }
   }
+
 
   return new Response(JSON.stringify({ message: "Method not allowed" }), {
     status: 405,

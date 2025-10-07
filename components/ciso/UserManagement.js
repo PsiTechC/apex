@@ -74,9 +74,9 @@ export default function UserManagement({ ownerEmails = [], onRefresh }) {
                 {email}
               </p>
               <div className="flex gap-2 mt-4">
-                <button className="flex-1 bg-green-100 hover:bg-green-200 text-green-800 text-xs px-3 py-1 rounded border border-green-300 transition">
+                {/* <button className="flex-1 bg-green-100 hover:bg-green-200 text-green-800 text-xs px-3 py-1 rounded border border-green-300 transition">
                   Enable
-                </button>
+                </button> */}
 
                 <button
                   onClick={() => handleDelete(email)}
